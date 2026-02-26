@@ -16,3 +16,8 @@ reminders-mcp = "reminders_mcp.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/reminders_mcp"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

@@ -1,23 +1,40 @@
-# reminders-mcp
+# 🖊️ reminders-mcp
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes the macOS Reminders app as tools for Claude.
+> **macOS only** — this server uses AppleScript to communicate with the macOS Reminders app.
+
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets Claude read and manage your macOS Reminders. Create, list, complete, and delete reminders directly from any MCP-compatible client such as Claude Desktop.
 
 ## Requirements
 
 - macOS
 - Python 3.11+
-- [uv](https://docs.astral.sh/uv/)
-- macOS Reminders app (grant Automation permission when prompted)
+- [uv](https://docs.astral.sh/uv/) — install with `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- macOS Reminders app (you'll be prompted to grant Automation permission on first run)
 
-## Setup
+## Installation
 
 ```bash
-# Install dependencies
+git clone https://github.com/mhtb32/reminders-mcp.git
+cd reminders-mcp
 uv sync
-
-# Run the server directly (for testing)
-uv run reminders-mcp
 ```
+
+## Claude Desktop Setup
+
+Add the following to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "🖊️ reminders": {
+      "command": "/Users/YOUR_USERNAME/.local/bin/uv",
+      "args": ["run", "--directory", "/path/to/reminders-mcp", "reminders-mcp"]
+    }
+  }
+}
+```
+
+Replace `YOUR_USERNAME` and `/path/to/reminders-mcp` with your actual values, then restart Claude Desktop.
 
 ## Tools
 
@@ -29,22 +46,18 @@ uv run reminders-mcp
 | `complete_reminder` | Mark a reminder as completed |
 | `delete_reminder` | Delete a reminder permanently |
 
-## Connect to Claude Desktop
+## Example Usage
 
-Merge the following into `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Once connected, you can ask Claude things like:
 
-```json
-{
-  "mcpServers": {
-    "reminders": {
-      "command": "/Users/nobitex/.local/bin/uv",
-      "args": ["run", "--directory", "/Users/nobitex/Projects/reminders-mcp", "reminders-mcp"]
-    }
-  }
-}
-```
+- _"What are my reminders for today?"_
+- _"Add a reminder to buy groceries tomorrow at 9am"_
+- _"Mark the 'Call dentist' reminder as done"_
+- _"Show me everything in my Work list"_
 
-Then restart Claude Desktop. Claude will have access to all five tools above.
+## How It Works
+
+This server uses **AppleScript** to communicate with the macOS Reminders app. No data leaves your machine — everything runs locally.
 
 ## Project Structure
 
@@ -58,3 +71,7 @@ reminders-mcp/
 ├── uv.lock
 └── README.md
 ```
+
+## License
+
+MIT

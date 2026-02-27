@@ -57,8 +57,21 @@ def get_reminders(list_name: str | None = None, include_completed: bool = False)
                     try
                         set rDue to due date of r as string
                     end try
+                    set rNotes to ""
+                    try
+                        set rNotes to body of r
+                        if rNotes is missing value then
+                            set rNotes to ""
+                        else
+                            set AppleScript's text item delimiters to (ASCII character 10)
+                            set noteItems to text items of rNotes
+                            set AppleScript's text item delimiters to "⏎"
+                            set rNotes to noteItems as string
+                            set AppleScript's text item delimiters to ""
+                        end if
+                    end try
                     set rList to name of l
-                    set output to output & rList & "|" & rName & "|" & rCompleted & "|" & rDue & "\\n"
+                    set output to output & rList & "|" & rName & "|" & rCompleted & "|" & rDue & "|" & rNotes & "\\n"
                 end repeat
             end repeat
             return output
@@ -70,13 +83,14 @@ def get_reminders(list_name: str | None = None, include_completed: bool = False)
         line = line.strip()
         if not line:
             continue
-        parts = line.split("|")
+        parts = line.split("|", 4)
         if len(parts) >= 3:
             reminders.append({
                 "list": parts[0],
                 "name": parts[1],
                 "completed": parts[2].lower() == "true",
                 "due_date": parts[3] if len(parts) > 3 and parts[3] and parts[3] != "missing value" else None,
+                "notes": parts[4].replace("⏎", "\n") if len(parts) > 4 and parts[4] else None,
             })
     return reminders
 
@@ -122,6 +136,49 @@ def complete_reminder(name: str, list_name: str | None = None) -> bool:
                 repeat with r in reminders of l
                     if name of r is "{name}" then
                         set completed of r to true
+                        return "ok"
+                    end if
+                end repeat
+            end repeat
+            return "not found"
+        end tell
+    """
+    result = _run_applescript(script)
+    return result == "ok"
+
+
+def update_reminder(
+    name: str,
+    list_name: str | None = None,
+    new_name: str | None = None,
+    notes: str | None = None,
+    due_date: str | None = None,
+) -> bool:
+    """Update properties of an existing reminder. Returns True on success."""
+    updates = []
+    if new_name is not None:
+        updates.append(f'set name of r to "{new_name}"')
+    if notes is not None:
+        updates.append(f'set body of r to "{notes}"')
+    if due_date is not None:
+        updates.append(f'set due date of r to date "{due_date}"')
+
+    if not updates:
+        return True
+
+    updates_script = "\n                        ".join(updates)
+
+    script = f"""
+        tell application "Reminders"
+            if "{list_name or ""}" is not "" then
+                set theList to {{list "{list_name or ""}"}}
+            else
+                set theList to lists
+            end if
+            repeat with l in theList
+                repeat with r in reminders of l
+                    if name of r is "{name}" then
+                        {updates_script}
                         return "ok"
                     end if
                 end repeat

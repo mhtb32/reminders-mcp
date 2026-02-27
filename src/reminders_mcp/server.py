@@ -55,6 +55,36 @@ def create_reminder(
 
 
 @mcp.tool()
+def update_reminder(
+    name: str,
+    list_name: str = "",
+    new_name: str = "",
+    notes: str = "",
+    due_date: str = "",
+) -> bool:
+    """
+    Update properties of an existing reminder.
+
+    Args:
+        name: The exact current name of the reminder to update.
+        list_name: Optional list name to narrow the search.
+        new_name: New title for the reminder. Leave empty to keep unchanged.
+        notes: New notes/description. Leave empty to keep unchanged.
+        due_date: New due date, e.g. "February 28, 2026 at 9:00 AM". Leave empty to keep unchanged.
+
+    Returns:
+        True if the reminder was found and updated, False otherwise.
+    """
+    return reminders.update_reminder(
+        name=name,
+        list_name=list_name or None,
+        new_name=new_name or None,
+        notes=notes or None,
+        due_date=due_date or None,
+    )
+
+
+@mcp.tool()
 def complete_reminder(name: str, list_name: str = "") -> bool:
     """
     Mark a reminder as completed.

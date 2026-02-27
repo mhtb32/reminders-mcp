@@ -15,6 +15,19 @@ uv run pytest tests/ -v  # run tests
 - `src/reminders_mcp/reminders.py` — all macOS Reminders access via AppleScript (`osascript`)
 - `src/reminders_mcp/server.py` — MCP tool definitions using FastMCP
 
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_reminder_lists` | Get all list names |
+| `list_reminders` | List reminders with name, due date, notes, completed; optional list filter |
+| `create_reminder` | Create with optional due date and notes |
+| `update_reminder` | Update title, notes, and/or due date of an existing reminder |
+| `complete_reminder` | Mark as completed |
+| `delete_reminder` | Delete permanently |
+
+`list_reminders` returns `notes` as a string (multiline notes preserved) or `null`.
+
 ## Key Constraints
 
 - **macOS only** — everything goes through AppleScript; no cross-platform support

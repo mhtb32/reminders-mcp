@@ -10,6 +10,7 @@ from reminders_mcp.reminders import (
     delete_reminder,
     get_lists,
     get_reminders,
+    update_reminder,
 )
 
 
@@ -51,7 +52,7 @@ class TestGetLists:
 
 class TestGetReminders:
     def test_parses_basic_reminder(self):
-        output = "Work|Buy coffee|false|missing value\n"
+        output = "Work|Buy coffee|false|missing value|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert len(result) == 1
@@ -60,28 +61,53 @@ class TestGetReminders:
             "name": "Buy coffee",
             "completed": False,
             "due_date": None,
+            "notes": None,
         }
 
     def test_missing_value_due_date_becomes_none(self):
-        output = "Personal|Call dentist|false|missing value\n"
+        output = "Personal|Call dentist|false|missing value|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert result[0]["due_date"] is None
 
     def test_real_due_date_is_preserved(self):
-        output = "Work|Submit report|false|Thursday, February 27, 2026 at 9:00 AM\n"
+        output = "Work|Submit report|false|Thursday, February 27, 2026 at 9:00 AM|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert result[0]["due_date"] == "Thursday, February 27, 2026 at 9:00 AM"
 
     def test_completed_flag_parsed_correctly(self):
-        output = "Work|Done task|true|missing value\n"
+        output = "Work|Done task|true|missing value|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert result[0]["completed"] is True
 
+    def test_notes_returned_when_present(self):
+        output = "Work|Buy milk|false|missing value|2% fat, organic\n"
+        with patch("subprocess.run", return_value=mock_run(output)):
+            result = get_reminders()
+        assert result[0]["notes"] == "2% fat, organic"
+
+    def test_empty_notes_returns_none(self):
+        output = "Work|Buy milk|false|missing value|\n"
+        with patch("subprocess.run", return_value=mock_run(output)):
+            result = get_reminders()
+        assert result[0]["notes"] is None
+
+    def test_multiline_notes_preserved(self):
+        output = "Work|Buy milk|false|missing value|Line 1⏎Line 2⏎Line 3\n"
+        with patch("subprocess.run", return_value=mock_run(output)):
+            result = get_reminders()
+        assert result[0]["notes"] == "Line 1\nLine 2\nLine 3"
+
+    def test_notes_with_pipe_character_preserved(self):
+        output = "Work|Buy milk|false|missing value|step1|step2|step3\n"
+        with patch("subprocess.run", return_value=mock_run(output)):
+            result = get_reminders()
+        assert result[0]["notes"] == "step1|step2|step3"
+
     def test_multiple_reminders(self):
-        output = "Work|Task A|false|missing value\nWork|Task B|true|missing value\n"
+        output = "Work|Task A|false|missing value|\nWork|Task B|true|missing value|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert len(result) == 2
@@ -93,7 +119,7 @@ class TestGetReminders:
             assert get_reminders() == []
 
     def test_malformed_lines_are_skipped(self):
-        output = "OnlyOneField\nWork|Task|false|missing value\n"
+        output = "OnlyOneField\nWork|Task|false|missing value|\n"
         with patch("subprocess.run", return_value=mock_run(output)):
             result = get_reminders()
         assert len(result) == 1
@@ -163,6 +189,58 @@ class TestCompleteReminder:
         with patch("subprocess.run", return_value=mock_run(returncode=1)):
             with pytest.raises(RuntimeError):
                 complete_reminder("Task")
+
+
+# ---------------------------------------------------------------------------
+# update_reminder
+# ---------------------------------------------------------------------------
+
+class TestUpdateReminder:
+    def test_returns_true_on_success(self):
+        with patch("subprocess.run", return_value=mock_run("ok")):
+            assert update_reminder("Buy milk", notes="2% fat") is True
+
+    def test_returns_false_when_not_found(self):
+        with patch("subprocess.run", return_value=mock_run("not found")):
+            assert update_reminder("Nonexistent", notes="x") is False
+
+    def test_update_notes_includes_body_in_script(self):
+        with patch("subprocess.run", return_value=mock_run("ok")) as mock:
+            update_reminder("Buy milk", notes="2% fat")
+            script = mock.call_args[0][0][2]
+            assert "set body of r to" in script
+            assert "2% fat" in script
+
+    def test_update_name_includes_name_in_script(self):
+        with patch("subprocess.run", return_value=mock_run("ok")) as mock:
+            update_reminder("Buy milk", new_name="Buy oat milk")
+            script = mock.call_args[0][0][2]
+            assert "set name of r to" in script
+            assert "Buy oat milk" in script
+
+    def test_update_due_date_includes_date_in_script(self):
+        with patch("subprocess.run", return_value=mock_run("ok")) as mock:
+            update_reminder("Buy milk", due_date="March 1, 2026 at 9:00 AM")
+            script = mock.call_args[0][0][2]
+            assert "set due date of r to" in script
+            assert "March 1, 2026" in script
+
+    def test_no_updates_returns_true_without_applescript_call(self):
+        with patch("subprocess.run", return_value=mock_run("ok")) as mock:
+            result = update_reminder("Buy milk")
+            assert result is True
+            mock.assert_not_called()
+
+    def test_with_list_name_scopes_search(self):
+        with patch("subprocess.run", return_value=mock_run("ok")) as mock:
+            update_reminder("Buy milk", list_name="Groceries", notes="organic")
+            script = mock.call_args[0][0][2]
+            assert "Groceries" in script
+
+    def test_applescript_error_raises(self):
+        with patch("subprocess.run", return_value=mock_run(returncode=1)):
+            with pytest.raises(RuntimeError):
+                update_reminder("Task", notes="x")
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 # 🖊️ reminders-mcp
 
+![reminders-mcp](assets/readme-image.png)
+
 > **macOS only** — this server uses AppleScript to communicate with the macOS Reminders app.
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets Claude read and manage your macOS Reminders. Create, list, update, complete, and delete reminders directly from any MCP-compatible client such as Claude Desktop.

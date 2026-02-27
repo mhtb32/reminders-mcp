@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "reminders": {
-      "command": "/Users/nobitex/.local/bin/uv",
-      "args": ["run", "--directory", "/Users/nobitex/Projects/reminders-mcp", "reminders-mcp"]
-    }
-  }
-}

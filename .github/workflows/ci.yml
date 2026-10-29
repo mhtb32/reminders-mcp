@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: macos-latest
+    env:
+      UV_PYTHON: "3.13"
 
     steps:
       - uses: actions/checkout@v4

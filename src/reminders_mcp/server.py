@@ -1,18 +1,19 @@
 """MCP server exposing macOS Reminders as tools."""
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from reminders_mcp import reminders
 
 mcp = FastMCP("reminders")
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 def list_reminder_lists() -> list[str]:
     """List all reminder lists available in the macOS Reminders app."""
     return reminders.get_lists()
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=False))
 def list_reminders(list_name: str = "", include_completed: bool = False) -> list[dict]:
     """
     List reminders from the macOS Reminders app.
@@ -27,7 +28,7 @@ def list_reminders(list_name: str = "", include_completed: bool = False) -> list
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(destructiveHint=False, openWorldHint=False))
 def create_reminder(
     name: str,
     list_name: str = "",
@@ -54,7 +55,7 @@ def create_reminder(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(destructiveHint=True, idempotentHint=True, openWorldHint=False))
 def update_reminder(
     name: str,
     list_name: str = "",
@@ -84,7 +85,7 @@ def update_reminder(
     )
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(destructiveHint=False, idempotentHint=True, openWorldHint=False))
 def complete_reminder(name: str, list_name: str = "") -> bool:
     """
     Mark a reminder as completed.
@@ -99,7 +100,7 @@ def complete_reminder(name: str, list_name: str = "") -> bool:
     return reminders.complete_reminder(name=name, list_name=list_name or None)
 
 
-@mcp.tool()
+@mcp.tool(annotations=ToolAnnotations(destructiveHint=True, openWorldHint=False))
 def delete_reminder(name: str, list_name: str = "") -> bool:
     """
     Delete a reminder permanently.
